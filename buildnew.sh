@@ -6,7 +6,7 @@ SECONDS=0 # builtin bash timer
 ZIPNAME="Lean.Kernel-Ginkgo$(TZ=Europe/Istanbul date +"%Y%m%d-%H%M").zip"
 TC_DIR="$HOME/tc/weebx"
 AK3_DIR="$HOME/android/AnyKernel3"
-DEFCONFIG="vendor/lean-perf_defconfig"
+DEFCONFIG="vendor/ginkgo-perf_defconfig"
 
 # Create TC_DIR if it doesn't exist
 mkdir -p "$HOME/tc"
