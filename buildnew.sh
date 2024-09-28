@@ -6,7 +6,7 @@ SECONDS=0 # builtin bash timer
 ZIPNAME="Lean.Kernel-Ginkgo$(TZ=Europe/Istanbul date +"%Y%m%d-%H%M").zip"
 TC_DIR="$HOME/tc/weebx"
 AK3_DIR="$HOME/android/AnyKernel3"
-DEFCONFIG="vendor/ginkgo-perf_defconfig"
+DEFCONFIG="vendor/lean-perf_defconfig"
 
 # Create TC_DIR if it doesn't exist
 mkdir -p "$HOME/tc"
@@ -64,6 +64,9 @@ export KBUILD_COMPILER_STRING="$("${TC_DIR}/bin/clang" --version | head -n 1 | p
 export KBUILD_BUILD_USER="linux"
 export KBUILD_BUILD_HOST="LeanHijosdesusMadres"
 export KBUILD_BUILD_VERSION="1"
+
+# Set CROSS_COMPILE_ARM32 to prevent vDSO build error
+export CROSS_COMPILE_ARM32="${TC_DIR}/bin/arm-linux-gnueabi-"
 
 if [[ $1 = "-r" || $1 = "--regen" ]]; then
     make O=out ARCH=arm64 $DEFCONFIG savedefconfig
