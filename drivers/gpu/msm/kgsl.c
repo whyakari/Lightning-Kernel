@@ -5016,14 +5016,28 @@ int kgsl_device_platform_probe(struct kgsl_device *device)
 	}
 
 	status = devm_request_irq(device->dev, device->pwrctrl.interrupt_num,
-				  kgsl_irq_handler,
-				  IRQF_TRIGGER_HIGH | IRQF_PERF_CRITICAL,
-				  device->name, device);
-	if (status) {
-		KGSL_DRV_ERR(device, "request_irq(%d) failed: %d\n",
-			      device->pwrctrl.interrupt_num, status);
-		goto error_pwrctrl_close;
-	}
+                          kgsl_irq_handler,
+                          IRQF_TRIGGER_HIGH,
+                          device->name, device);
+
+if (status) {
+    KGSL_DRV_ERR(device, "request_irq(%d) failed: %d\n",
+                 device->pwrctrl.interrupt_num, status);
+    goto error_pwrctrl_close;
+} else {
+    // Creamos una máscara de CPU
+    struct cpumask mask;
+    
+    // Limpiamos la máscara
+    cpumask_clear(&mask);
+    
+    // Establecemos el CPU donde queremos que se ejecute (por ejemplo, CPU 3)
+    cpumask_set_cpu(6, &mask);
+    
+    // Configuramos la afinidad de la IRQ para que se ejecute en el CPU 3
+    irq_set_affinity_hint(device->pwrctrl.interrupt_num, &mask);
+}
+
 	disable_irq(device->pwrctrl.interrupt_num);
 
 	KGSL_DRV_INFO(device,
