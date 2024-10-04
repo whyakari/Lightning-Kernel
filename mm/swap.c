@@ -1064,5 +1064,5 @@ void __init swap_setup(void)
 	 */
 #ifdef CONFIG_OPLUS_MM_HACKS
 	page_cluster = 0;
-#endif /* CONFIG_OPLUS_MM_HACKS 
+#endif /* CONFIG_OPLUS_MM_HACKS */
 }
