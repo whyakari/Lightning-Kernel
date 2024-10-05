@@ -4,69 +4,54 @@ set -e  # Exit immediately if a command exits with a non-zero status.
 
 SECONDS=0 # builtin bash timer
 ZIPNAME="Lean.Kernel-Ginkgo$(TZ=Lima/America date +"%Y%m%d-%H%M").zip"
-TC_DIR="$HOME/tc/weebx"
+MAIN=$(readlink -f "$HOME")
 AK3_DIR="$HOME/android/AnyKernel3"
 DEFCONFIG="vendor/lean-perf_defconfig"
 
-# Create TC_DIR if it doesn't exist
-mkdir -p "$HOME/tc"
+# Comprobar si el compilador clang está presente, si no, descargar ZyC Stable
+if [ ! -d "$MAIN/clang" ]; then
+    echo "No se encontró el compilador clang... Clonando ZyC Stable desde GitHub"
 
-# Clang setup
-if ! [ -d "${TC_DIR}" ]; then
-    echo "Clang not found! Downloading WeebX Clang..."
-    CLANG_URL=$(curl -s https://raw.githubusercontent.com/v3kt0r-87/Clang-Stable/main/clang-weebx.txt)
-    if [ -z "$CLANG_URL" ]; then
-        echo "Failed to fetch Clang URL. Aborting..."
-        exit 1
-    fi
-    echo "Clang URL: $CLANG_URL"
+    # Establecer la URL de ZyC Stable
+    CLANG_URL=$(curl -s https://raw.githubusercontent.com/v3kt0r-87/Clang-Stable/main/clang-zyc.txt)
+    ARCHIVE_NAME="zyc-clang.tar.gz"
     
-    ARCHIVE_NAME="weebx-clang.tar.gz"
-    DOWNLOAD_PATH="$HOME/tc/$ARCHIVE_NAME"
-    
-    echo "Downloading Clang to $DOWNLOAD_PATH..."
-    if ! wget "$CLANG_URL" -O "$DOWNLOAD_PATH"; then
-        echo "Failed to download Clang. Aborting..."
-        exit 1
-    fi
-    
-    if [ ! -f "$DOWNLOAD_PATH" ]; then
-        echo "Downloaded file not found at $DOWNLOAD_PATH. Aborting..."
+    # Descargar ZyC Stable Clang
+    echo "Descargando ZyC Clang... Por favor espera..."
+    if ! wget -P "$MAIN" "$CLANG_URL" -O "$MAIN/$ARCHIVE_NAME"; then
+        echo "Error al descargar Clang. Abortando..."
         exit 1
     fi
 
-    echo "Creating directory ${TC_DIR}..."
-    mkdir -p "${TC_DIR}"
-    
-    echo "Extracting Clang..."
-    if ! tar -xzf "$DOWNLOAD_PATH" -C "${TC_DIR}" --strip-components=1; then
-        echo "Failed to extract Clang. Aborting..."
+    # Crear el directorio clang y extraer el archivo
+    mkdir -p "$MAIN/clang"
+    if ! tar -xvf "$MAIN/$ARCHIVE_NAME" -C "$MAIN/clang"; then
+        echo "Error al extraer Clang. Abortando..."
         exit 1
     fi
 
-    echo "Removing downloaded archive..."
-    rm -f "$DOWNLOAD_PATH"
-    
-    echo "Clang setup completed successfully."
+    # Eliminar el archivo descargado
+    rm -f "$MAIN/$ARCHIVE_NAME"
+
+    # Verificar si el directorio clang se creó correctamente
+    if [ ! -d "$MAIN/clang" ]; then
+        echo "Error al crear el directorio 'clang'. Abortando..."
+        exit 1
+    fi
 else
-    echo "Clang directory found at ${TC_DIR}. Skipping download."
+    echo "Se encontró el directorio Clang en $MAIN/clang. Omitiendo la descarga."
 fi
 
-# Check if clang binary exists
-if [ ! -f "${TC_DIR}/bin/clang" ]; then
-    echo "Clang binary not found at ${TC_DIR}/bin/clang. Setup may have failed."
-    exit 1
-fi
-
-export PATH="${TC_DIR}/bin:$PATH"
-export KBUILD_COMPILER_STRING="$("${TC_DIR}/bin/clang" --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+# Establecer variables de entorno para la compilación
+export PATH="$MAIN/clang/bin:$PATH"
+export KBUILD_COMPILER_STRING="$("$MAIN/clang/bin/clang" --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 
 export KBUILD_BUILD_USER="linux"
 export KBUILD_BUILD_HOST="LeanHijosdesusMadres"
 export KBUILD_BUILD_VERSION="1"
 
-# Set CROSS_COMPILE_ARM32 to prevent vDSO build error
-export CROSS_COMPILE_ARM32="${TC_DIR}/bin/arm-linux-gnueabi-"
+# Establecer CROSS_COMPILE_ARM32 para evitar el error de compilación de vDSO
+export CROSS_COMPILE_ARM32="$MAIN/clang/bin/arm-linux-gnueabi-"
 
 if [[ $1 = "-r" || $1 = "--regen" ]]; then
     make O=out ARCH=arm64 $DEFCONFIG savedefconfig
@@ -81,7 +66,7 @@ fi
 mkdir -p out
 make O=out ARCH=arm64 $DEFCONFIG
 
-echo -e "\nStarting compilation...\n"
+echo -e "\nIniciando compilación...\n"
 make -j$(nproc --all) O=out \
     ARCH=arm64 \
     CC=clang \
@@ -97,11 +82,11 @@ make -j$(nproc --all) O=out \
     Image.gz-dtb dtbo.img
 
 if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ]; then
-    echo -e "\nKernel compiled successfully! Zipping up...\n"
+    echo -e "\nEl kernel se ha compilado correctamente. Empaquetando...\n"
     if [ -d "$AK3_DIR" ]; then
         cp -r $AK3_DIR AnyKernel3
     elif ! git clone -q https://github.com/LeanxModulostk/AnyKernel3; then
-        echo -e "\nAnyKernel3 repo not found locally and cloning failed! Aborting..."
+        echo -e "\nNo se encontró el repositorio AnyKernel3 localmente y la clonación falló. Abortando..."
         exit 1
     fi
     cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
@@ -113,9 +98,9 @@ if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.i
     cd ..
     rm -rf AnyKernel3
     rm -rf out/arch/arm64/boot
-    echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
+    echo -e "\nCompletado en $((SECONDS / 60)) minuto(s) y $((SECONDS % 60)) segundo(s)!"
     echo "Zip: $ZIPNAME"
 else
-    echo -e "\nCompilation failed!"
+    echo -e "\n¡La compilación falló!"
     exit 1
 fi
