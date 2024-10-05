@@ -285,8 +285,8 @@ static int cpu_power_select(struct cpuidle_device *dev,
 	uint32_t max_residency;
 	struct power_params *pwr_params;
 
-	if (lpm_disallowed(sleep_us, dev->cpu, cpu))
-		goto done_select;
+	if ((sleep_disabled && !cpu_isolated(dev->cpu)) || sleep_us < 0)
+		return best_level;
 
 	idx_restrict = cpu->nlevels + 1;
 	next_event_us = (uint32_t)(ktime_to_us(get_next_event_time(dev->cpu)));
@@ -680,9 +680,7 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle)
 	 */
 
 	if (!idx) {
-		stop_critical_timings();
 		cpu_do_idle();
-		start_critical_timings();
 		return 1;
 	}
 
@@ -696,11 +694,7 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle)
 	affinity_level = PSCI_AFFINITY_LEVEL(affinity_level);
 	state_id += power_state + affinity_level + cpu->levels[idx].psci_id;
 
-	stop_critical_timings();
-
 	success = !arm_cpuidle_suspend(state_id);
-
-	start_critical_timings();
 
 	if (from_idle && cpu->levels[idx].use_bc_timer)
 		tick_broadcast_exit();
@@ -747,9 +741,7 @@ exit:
 
 	cluster_unprepare(cpu->parent, cpumask, idx, true, end_time, success);
 	cpu_unprepare(cpu, idx, true);
-	dev->last_residency = ktime_us_delta(ktime_get(), start);
 	trace_cpu_idle_exit(idx, success);
-	local_irq_enable();
 	return idx;
 }
 
