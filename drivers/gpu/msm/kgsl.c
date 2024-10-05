@@ -5032,7 +5032,7 @@ if (status) {
     cpumask_clear(&mask);
     
     // Establecemos el CPU donde queremos que se ejecute (por ejemplo, CPU 3)
-    cpumask_set_cpu(6, &mask);
+    cpumask_set_cpu(5, &mask);
     
     // Configuramos la afinidad de la IRQ para que se ejecute en el CPU 3
     irq_set_affinity_hint(device->pwrctrl.interrupt_num, &mask);
