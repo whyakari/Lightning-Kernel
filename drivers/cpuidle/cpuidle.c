@@ -642,11 +642,6 @@ EXPORT_SYMBOL_GPL(cpuidle_register);
 
 #ifdef CONFIG_SMP
 
-static void wake_up_idle_cpus(void *v)
-{
-	return NOTIFY_OK;
-}
-
 /*
  * This function gets called when a part of the kernel has a new latency
  * requirement.  This means we need to get only those processors out of their
@@ -656,7 +651,6 @@ static void wake_up_idle_cpus(void *v)
 static int cpuidle_latency_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	wake_up_idle_cpus(v);
 	return NOTIFY_OK;
 }
 
