@@ -13,8 +13,6 @@
 SECONDS=0 # builtin bash timer
 ZIPNAME="Lean-Kernel-Ginkgo$(TZ=Lima/America date +"%Y%m%d-%H%M").zip"
 CLANG_DIR="$HOME/tc/clang-lean"
-GCC_64_DIR="$HOME/tc/aarch64-linux-android-4.9"
-GCC_32_DIR="$HOME/tc/arm-linux-androideabi-4.9"
 AK3_DIR="$HOME/android/AnyKernel3"
 DEFCONFIG="vendor/lean-perf_defconfig"
 
@@ -57,22 +55,6 @@ if [ ! -d "${CLANG_DIR}" ]; then
     fi
 fi
 
-if ! [ -d "${GCC_64_DIR}" ]; then
-    echo "gcc not found! Cloning to ${GCC_64_DIR}..."
-    if ! git clone --depth=1 -b lineage-19.1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git ${GCC_64_DIR}; then
-        echo "Cloning failed! Aborting..."
-        exit 1
-    fi
-fi
-
-if ! [ -d "${GCC_32_DIR}" ]; then
-    echo "gcc_32 not found! Cloning to ${GCC_32_DIR}..."
-    if ! git clone --depth=1 -b lineage-19.1 https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9.git ${GCC_32_DIR}; then
-        echo "Cloning failed! Aborting..."
-        exit 1
-    fi
-fi
-
 mkdir -p out
 make O=out ARCH=arm64 $DEFCONFIG
 
@@ -89,7 +71,6 @@ make -j$(nproc --all) O=out \
                       STRIP=llvm-strip \
                       CROSS_COMPILE=aarch64-linux-gnu- \
                       CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-                      CLANG_TRIPLE=aarch64-linux-gnu- \
                       Image.gz-dtb \
                       dtbo.img
 
