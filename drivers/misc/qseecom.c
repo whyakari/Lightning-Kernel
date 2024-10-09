@@ -371,7 +371,7 @@ struct qseecom_client_handle {
 
 struct qseecom_listener_handle {
 	u32               id;
-	bool              unregister_pending;
+	bool              register_pending;
 	bool              release_called;
 };
 
@@ -1394,6 +1394,11 @@ static int qseecom_register_listener(struct qseecom_dev_handle *data,
 	struct qseecom_registered_listener_list *new_entry;
 	struct qseecom_registered_listener_list *ptr_svc;
 
+	if (data->listener.register_pending) {
+		pr_err("Already a listner registration is in process on this FD\n");
+		return -EINVAL;
+	}
+
 	ret = copy_from_user(&rcvd_lstnr, argp, sizeof(rcvd_lstnr));
 	if (ret) {
 		pr_err("copy_from_user failed\n");
@@ -1402,6 +1407,13 @@ static int qseecom_register_listener(struct qseecom_dev_handle *data,
 	if (!access_ok(VERIFY_WRITE, (void __user *)rcvd_lstnr.virt_sb_base,
 			rcvd_lstnr.sb_size))
 		return -EFAULT;
+
+	ptr_svc = __qseecom_find_svc(data->listener.id);
+	if (ptr_svc) {
+		pr_err("Already a listener registered on this data: lid=%d\n",
+			data->listener.id);
+		return -EINVAL;
+	}
 
 	ptr_svc = __qseecom_find_svc(rcvd_lstnr.listener_id);
 	if (ptr_svc) {
@@ -1437,12 +1449,15 @@ static int qseecom_register_listener(struct qseecom_dev_handle *data,
 	new_entry->svc.listener_id = rcvd_lstnr.listener_id;
 	new_entry->sb_length = rcvd_lstnr.sb_size;
 	new_entry->user_virt_sb_base = rcvd_lstnr.virt_sb_base;
+	data->listener.register_pending = true;
 	if (__qseecom_set_sb_memory(new_entry, data, &rcvd_lstnr)) {
 		pr_err("qseecom_set_sb_memory failed for listener %d, size %d\n",
 				rcvd_lstnr.listener_id, rcvd_lstnr.sb_size);
 		kzfree(new_entry);
+		data->listener.register_pending = false;
 		return -ENOMEM;
 	}
+	data->listener.register_pending = false;
 
 	init_waitqueue_head(&new_entry->rcv_req_wq);
 	init_waitqueue_head(&new_entry->listener_block_app_wq);
@@ -3460,8 +3475,7 @@ exit:
 }
 
 static int __validate_send_cmd_inputs(struct qseecom_dev_handle *data,
-				qseecom_send_cmd_req *req,
-			bool is_phys_adr)
+				struct qseecom_send_cmd_req *req)
 
 {
 	if (!data || !data->client.sb_virt) {
@@ -3570,7 +3584,8 @@ int __qseecom_process_reentrancy(struct qseecom_command_scm_resp *resp,
 }
 
 static int __qseecom_send_cmd(struct qseecom_dev_handle *data,
-				struct qseecom_send_cmd_req *req)
+			struct qseecom_send_cmd_req *req,
+			bool is_phys_adr)
 {
 	int ret = 0;
 	u32 reqd_len_sb_in = 0;
@@ -3612,6 +3627,7 @@ static int __qseecom_send_cmd(struct qseecom_dev_handle *data,
 
 	if (qseecom.qsee_version < QSEE_VERSION_40) {
 		send_data_req.app_id = data->client.app_id;
+
 		if (!is_phys_adr) {
 			send_data_req.req_ptr =
 				(uint32_t)(__qseecom_uvirt_to_kphys
@@ -3623,6 +3639,7 @@ static int __qseecom_send_cmd(struct qseecom_dev_handle *data,
 			send_data_req.req_ptr = (uint32_t)req->cmd_req_buf;
 			send_data_req.rsp_ptr = (uint32_t)req->resp_buf;
 		}
+
 		send_data_req.req_len = req->cmd_req_len;
 		send_data_req.rsp_len = req->resp_len;
 		send_data_req.sglistinfo_ptr =
@@ -3634,6 +3651,7 @@ static int __qseecom_send_cmd(struct qseecom_dev_handle *data,
 		cmd_len = sizeof(struct qseecom_client_send_data_ireq);
 	} else {
 		send_data_req_64bit.app_id = data->client.app_id;
+
 		if (!is_phys_adr) {
 			send_data_req_64bit.req_ptr =
 				 __qseecom_uvirt_to_kphys(data,
@@ -4260,6 +4278,7 @@ static int __qseecom_send_modfd_cmd(struct qseecom_dev_handle *data,
 			return -EINVAL;
 		}
 	}
+
 	/*Back up original address */
 	origin_req_buf_kvirt = (void *)__qseecom_uvirt_to_kvirt(data,
 				(uintptr_t)req.cmd_req_buf);
@@ -9323,9 +9342,6 @@ static int qseecom_probe(struct platform_device *pdev)
 		qseecom.timer_running = false;
 		qseecom.qsee_perf_client = msm_bus_scale_register_client(
 		      qseecom_platform_support);
-
-		if (!qseecom.qsee_perf_client)
-			pr_err("Unable to register bus client\n");
 	}
 
 	qseecom.whitelist_support = qseecom_check_whitelist_feature();
@@ -9355,6 +9371,9 @@ static int qseecom_probe(struct platform_device *pdev)
 	}
 	atomic_set(&qseecom.unload_app_kthread_state,
 						UNLOAD_APP_KT_SLEEP);
+
+	if (!qseecom.qsee_perf_client)
+		pr_err("Unable to register bus client\n");
 
 	atomic_set(&qseecom.qseecom_state, QSEECOM_STATE_READY);
 	return 0;
@@ -9530,7 +9549,7 @@ static int qseecom_suspend(struct platform_device *pdev, pm_message_t state)
 
 static int qseecom_resume(struct platform_device *pdev)
 {
-	int mode = LOW;
+	int mode = 0;
 	int ret = 0;
 	struct qseecom_clk *qclk;
 
@@ -9540,6 +9559,10 @@ static int qseecom_resume(struct platform_device *pdev)
 
 	mutex_lock(&qsee_bw_mutex);
 	mutex_lock(&clk_access_lock);
+	if (qseecom.cumulative_mode >= HIGH)
+		mode = HIGH;
+	else
+		mode = qseecom.cumulative_mode;
 
 	if (qseecom.cumulative_mode != INACTIVE) {
 		ret = msm_bus_scale_client_update_request(
