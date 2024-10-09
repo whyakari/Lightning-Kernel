@@ -2386,6 +2386,7 @@ int tcp_disconnect(struct sock *sk, int flags)
 	tp->max_packets_out = 0;
 	tp->window_clamp = 0;
 	tp->delivered = 0;
+	tp->delivered_ce = 0;
 	if (icsk->icsk_ca_ops->release)
 		icsk->icsk_ca_ops->release(sk);
 	memset(icsk->icsk_ca_priv, 0, sizeof(icsk->icsk_ca_priv));
@@ -2409,6 +2410,7 @@ int tcp_disconnect(struct sock *sk, int flags)
 	tp->bytes_received = 0;
 	tp->data_segs_in = 0;
 	tp->data_segs_out = 0;
+	tp->fast_ack_mode = 0;
 
 	/* Clean up fastopen related fields */
 	tcp_free_fastopen_req(tp);
@@ -2501,8 +2503,6 @@ static int tcp_repair_options_est(struct sock *sk,
 				return -EINVAL;
 
 			tp->rx_opt.sack_ok |= TCP_SACK_SEEN;
-			if (sysctl_tcp_fack)
-				tcp_enable_fack(tp);
 			break;
 		case TCPOPT_TIMESTAMP:
 			if (opt.opt_val != 0)
