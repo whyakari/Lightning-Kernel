@@ -378,10 +378,10 @@ void __init cpu_smt_disable(bool force)
 		return;
 
 	if (force) {
-		pr_info("SMT: Force disabled\n");
+		pr_debug("SMT: Force disabled\n");
 		cpu_smt_control = CPU_SMT_FORCE_DISABLED;
 	} else {
-		pr_info("SMT: disabled\n");
+		pr_debug("SMT: disabled\n");
 		cpu_smt_control = CPU_SMT_DISABLED;
 	}
 }
@@ -1083,7 +1083,17 @@ static int cpu_down_maps_locked(unsigned int cpu, enum cpuhp_state target)
 
 static int do_cpu_down(unsigned int cpu, enum cpuhp_state target)
 {
+    struct cpumask newmask;
 	int err;
+	
+	preempt_disable();
+	cpumask_andnot(&newmask, cpu_online_mask, cpumask_of(cpu));
+	preempt_enable();
+
+	/* One big and LITTLE CPU must remain online */
+	if (!cpumask_intersects(&newmask, cpu_lp_mask) ||
+	    !cpumask_intersects(&newmask, cpu_perf_mask))
+		return -EINVAL;
 
 	/*
 	 * When cpusets are enabled, the rebuilding of the scheduling
@@ -1259,10 +1269,10 @@ static int do_cpu_up(unsigned int cpu, enum cpuhp_state target)
 	int switch_err = 0;
 
 	if (!cpu_possible(cpu)) {
-		pr_err("can't online cpu %d because it is not configured as may-hotadd at boot time\n",
+		pr_debug("can't online cpu %d because it is not configured as may-hotadd at boot time\n",
 		       cpu);
 #if defined(CONFIG_IA64)
-		pr_err("please check additional_cpus= boot parameter\n");
+		pr_debug("please check additional_cpus= boot parameter\n");
 #endif
 		return -EINVAL;
 	}
@@ -1295,7 +1305,7 @@ out:
 	if (!switch_err) {
 		switch_err = switch_to_fair_policy();
 		if (switch_err)
-			pr_err("Hotplug policy switch err=%d Task %s pid=%d\n",
+			pr_debug("Hotplug policy switch err=%d Task %s pid=%d\n",
 				switch_err, current->comm, current->pid);
 	}
 
@@ -1342,7 +1352,7 @@ int freeze_secondary_cpus(int primary)
 		if (!error)
 			cpumask_set_cpu(cpu, frozen_cpus);
 		else {
-			pr_err("Error taking CPU%d down: %d\n", cpu, error);
+			pr_debug("Error taking CPU%d down: %d\n", cpu, error);
 			break;
 		}
 	}
