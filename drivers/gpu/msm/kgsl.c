@@ -5017,7 +5017,7 @@ int kgsl_device_platform_probe(struct kgsl_device *device)
 
 	status = devm_request_irq(device->dev, device->pwrctrl.interrupt_num,
                           kgsl_irq_handler,
-                          IRQF_TRIGGER_HIGH,
+                          IRQF_TRIGGER_HIGH | IRQF_PERF_CRITICAL,
                           device->name, device);
 
 if (status) {
@@ -5032,7 +5032,7 @@ if (status) {
     cpumask_clear(&mask);
     
     // Establecemos el CPU donde queremos que se ejecute (por ejemplo, CPU 3)
-    cpumask_set_cpu(5, &mask);
+    cpumask_set_cpu(6, &mask);
     
     // Configuramos la afinidad de la IRQ para que se ejecute en el CPU 3
     irq_set_affinity_hint(device->pwrctrl.interrupt_num, &mask);
