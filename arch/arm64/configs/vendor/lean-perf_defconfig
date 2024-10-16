@@ -779,7 +779,9 @@ CONFIG_HZ=125
 CONFIG_HZ_125=y 
 CONFIG_RCU_BOOST=y
 CONFIG_RCU_BOOST_DELAY=0
-CONFIG_CMDLINE="cgroup_disable=pressure rcutree.kthread_prio=99"
+CONFIG_NULL_TTY=y
+CONFIG_CMDLINE="console=ttynull stack_depot_disable=on cgroup_disable=pressure"
+CONFIG_CMDLINE_EXTEND=y
 
 # Logs
 CONFIG_CONSOLE_LOGLEVEL_DEFAULT=0
