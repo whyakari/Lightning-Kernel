@@ -5337,7 +5337,7 @@ err:
 		thread->looper_need_return = false;
 	wait_event_interruptible(binder_user_error_wait, binder_stop_on_user_error < 2);
 	if (ret && ret != -EINTR)
-		pr_debugdebug("%d:%d ioctl %x %lx returned %d\n", proc->pid, current->pid, cmd, arg, ret);
+		pr_debug("%d:%d ioctl %x %lx returned %d\n", proc->pid, current->pid, cmd, arg, ret);
 err_unlocked:
 	trace_binder_ioctl_done(ret);
 	return ret;
@@ -5416,7 +5416,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 	return 0;
 
 err_bad_arg:
-	pr_debugdebug("%s: %d %lx-%lx %s failed %d\n", __func__,
+	pr_debug("%s: %d %lx-%lx %s failed %d\n", __func__,
 	       proc->pid, vma->vm_start, vma->vm_end, failure_string, ret);
 	return ret;
 }
@@ -5514,7 +5514,7 @@ static int binder_open(struct inode *nodp, struct file *filp)
 
 			error = PTR_ERR(binderfs_entry);
 			if (error != -EEXIST) {
-				pr_debugdebug("Unable to create file %s in binderfs (error %d)\n",
+				pr_debug("Unable to create file %s in binderfs (error %d)\n",
 					strbuf, error);
 			}
 		}
