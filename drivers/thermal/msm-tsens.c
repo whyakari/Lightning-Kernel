@@ -175,7 +175,7 @@ static int get_device_tree_data(struct platform_device *pdev,
 	res_tsens_mem = platform_get_resource_byname(pdev,
 				IORESOURCE_MEM, "tsens_eeprom_physical");
 	if (!res_tsens_mem) {
-		pr_debugdebug("Could not get tsens physical address resource\n");
+		pr_debug("Could not get tsens physical address resource\n");
 	} else {
 		tmdev->tsens_calib_addr = devm_ioremap_resource(&pdev->dev,
 								res_tsens_mem);
@@ -185,7 +185,7 @@ static int get_device_tree_data(struct platform_device *pdev,
 		}  else {
 			rc = tsens_calib(tmdev);
 			if (rc) {
-				pr_debugdebug("Error initializing TSENS controller\n");
+				pr_debug("Error initializing TSENS controller\n");
 				return rc;
 			}
 		}
@@ -209,17 +209,17 @@ static int tsens_thermal_zone_register(struct tsens_device *tmdev)
 				&tmdev->pdev->dev, i,
 				&tmdev->sensor[i], &tsens_tm_thermal_zone_ops);
 			if (IS_ERR(tmdev->sensor[i].tzd)) {
-				pr_debugdebug("Error registering sensor:%d\n", i);
+				pr_debug("Error registering sensor:%d\n", i);
 				sensor_missing++;
 				continue;
 			}
 		} else {
-			pr_debugdebug("Sensor not enabled:%d\n", i);
+			pr_debug("Sensor not enabled:%d\n", i);
 		}
 	}
 
 	if (sensor_missing == TSENS_MAX_SENSORS) {
-		pr_debugdebug("No TSENS sensors to register?\n");
+		pr_debug("No TSENS sensors to register?\n");
 		return -ENODEV;
 	}
 
@@ -247,7 +247,7 @@ static void tsens_therm_fwk_notify(struct work_struct *work)
 		if (tmdev->ops->sensor_en(tmdev, i)) {
 			rc = tsens_get_temp(&tmdev->sensor[i], &temp);
 			if (rc) {
-				pr_debugdebug("%s: Error:%d reading temp sensor:%d\n",
+				pr_debug("%s: Error:%d reading temp sensor:%d\n",
 					__func__, rc, i);
 				continue;
 			}
@@ -277,7 +277,7 @@ int tsens_tm_probe(struct platform_device *pdev)
 
 	rc = get_device_tree_data(pdev, tmdev);
 	if (rc) {
-		pr_debugdebug("Error reading TSENS DT\n");
+		pr_debug("Error reading TSENS DT\n");
 		return rc;
 	}
 
@@ -300,13 +300,13 @@ int tsens_tm_probe(struct platform_device *pdev)
 
 	rc = tsens_thermal_zone_register(tmdev);
 	if (rc) {
-		pr_debugdebug("Error registering the thermal zone\n");
+		pr_debug("Error registering the thermal zone\n");
 		return rc;
 	}
 
 	rc = tsens_register_interrupts(tmdev);
 	if (rc < 0) {
-		pr_debugdebug("TSENS interrupt register failed:%d\n", rc);
+		pr_debug("TSENS interrupt register failed:%d\n", rc);
 		return rc;
 	}
 
