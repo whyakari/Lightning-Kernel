@@ -770,24 +770,19 @@ CONFIG_IOSCHED_ANXIETY=y
 CONFIG_OPLUS_MM_HACKS=y
 CONFIG_SCHED_BORE=y
 # CONFIG_IRQ_TIME_ACCOUNTING is not set
-# CONFIG_HZ_300 is not set
-# CONFIG_HZ_250 is not set
 # CONFIG_HZ_100 is not set
+# CONFIG_HZ_250 is not set
+# CONFIG_HZ_300 is not set
 CONFIG_HZ=1000
-CONFIG_HZ_1000=y 
+CONFIG_HZ_1000=y
 CONFIG_SCHED_HRTICK=y
 CONFIG_RCU_BOOST=y
 CONFIG_RCU_BOOST_DELAY=0
 CONFIG_NULL_TTY=y
-CONFIG_CMDLINE="console=ttynull stack_depot_disable=on cgroup_disable=pressure rcutree.kthread_prio=99 nodebugmon mitigations=off"
+CONFIG_CMDLINE="console=ttynull stack_depot_disable=on cgroup_disable=pressure rcutree.kthread_prio=99 nodebugmon mitigations=off cgroup.memory=nokmem loglevel=0 nohz=on initcall_debug=0 pti=off nowatchdog"
 CONFIG_CMDLINE_EXTEND=y
 CONFIG_PERF_EVENTS=y
-# CONFIG_WQ_POWER_EFFICIENT_DEFAULT is not set
-# CONFIG_BRIDGE_NETFILTER is not set
-# CONFIG_HW_RANDOM_CAVIUM is not set
-# CONFIG_IR_MSM_GENI is not set
-# CONFIG_LCD_CLASS_DEVICE is not set
-# CONFIG_QCOM_SHOW_RESUME_IRQ is not set
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
 
 # Logs
 CONFIG_CONSOLE_LOGLEVEL_DEFAULT=0
@@ -811,12 +806,6 @@ CONFIG_LOG_BUF_SHIFT=20
 CONFIG_LOG_CPU_MAX_BUF_SHIFT=0
 # CONFIG_NETFILTER_XT_TARGET_LOG is not set
 # CONFIG_KPROBES is not set
-CONFIG_PM_DEBUG=n
-CONFIG_MSM_SDE_ROTATOR_EVTLOG_DEBUG=n
-# CONFIG_ENABLE_DEFAULT_TRACERS is not set
-# CONFIG_DEBUG_BUGVERBOSE is not set
-# CONFIG_DEBUG_LIST is not set
-# CONFIG_IPC_LOGGING is not set
 
 # CPU Input Boost
 CONFIG_CPU_INPUT_BOOST=y
