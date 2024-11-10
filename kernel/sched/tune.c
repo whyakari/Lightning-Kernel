@@ -751,7 +751,7 @@ static void write_default_values(struct cgroup_subsys_state *css)
 		if (!strcmp(css->cgroup->kn->name, tgt.name)) {
 			boost_write(css, NULL, tgt.boost);
 			prefer_idle_write(css, NULL, tgt.prefer_idle);
-			pr_info("stune_assist: setting values for %s: boost=%d prefer_idle=%d\n",
+			pr_debug("stune_assist: setting values for %s: boost=%d prefer_idle=%d\n",
 				tgt.name, tgt.boost, tgt.prefer_idle);
 		}
 	}
@@ -789,7 +789,7 @@ schedtune_css_alloc(struct cgroup_subsys_state *parent_css)
 
 	/* Allow only single level hierachies */
 	if (parent_css != &root_schedtune.css) {
-		pr_err("Nested SchedTune boosting groups not allowed\n");
+		pr_debug("Nested SchedTune boosting groups not allowed\n");
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -801,7 +801,7 @@ schedtune_css_alloc(struct cgroup_subsys_state *parent_css)
 #endif
 	}
 	if (idx == BOOSTGROUPS_COUNT) {
-		pr_err("Trying to create more than %d SchedTune boosting groups\n",
+		pr_debug("Trying to create more than %d SchedTune boosting groups\n",
 		       BOOSTGROUPS_COUNT);
 		return ERR_PTR(-ENOSPC);
 	}
@@ -866,7 +866,7 @@ schedtune_init_cgroups(void)
 		raw_spin_lock_init(&bg->lock);
 	}
 
-	pr_info("schedtune: configured to support %d boost groups\n",
+	pr_debug("schedtune: configured to support %d boost groups\n",
 		BOOSTGROUPS_COUNT);
 
 	schedtune_initialized = true;
