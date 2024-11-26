@@ -28,7 +28,7 @@ if [ ! -d "${CLANG_DIR}" ]; then
     echo "No se encontró el compilador clang... Clonando ZyC Stable desde GitHub"
 
     # Establecer la URL de ZyC Stable directamente
-    CLANG_URL="https://github.com/ZyCromerZ/Clang/releases/download/16.0.6-20240430-release/Clang-16.0.6-20240430.tar.gz"
+    CLANG_URL="https://github.com/XSans0/WeebX-Clang/releases/download/WeebX-Clang-19.1.5-release/WeebX-Clang-19.1.5.tar.gz"
     ARCHIVE_NAME="zyc-clang.tar.gz"
     
     # Descargar ZyC Stable Clang
